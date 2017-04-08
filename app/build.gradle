@@ -1,4 +1,15 @@
 apply plugin: 'com.android.application'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.trickyandroid:jacoco-everywhere:0.2.1'
+    }
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
@@ -27,8 +38,15 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        debug{
+            testCoverageEnabled true
+        }
     }
 }
+
+
+apply plugin: 'jacoco-everywhere'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
