@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.TextView;
 
 import com.google.android.gms.auth.api.Auth;
@@ -25,6 +26,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String TAG = this.getClass().getSimpleName();
     private int RC_SIGN_IN = 127;
     private TextView mStatusTextView;
+    private WebView mWebView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         findViewById(R.id.sign_in_button).setOnClickListener(this);
         mStatusTextView = (TextView) findViewById(R.id.status_text_view);
+        mWebView = (WebView) findViewById(R.id.webview_spotify_login);
     }
 
     @Override
@@ -84,9 +87,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void handleSignInResult(GoogleSignInResult result) {
         Log.d(TAG, "handleSignInResult:" + result.isSuccess());
+        GoogleSignInAccount acct = null;
         if (result.isSuccess()) {
             // Signed in successfully, show authenticated UI.
-            GoogleSignInAccount acct = result.getSignInAccount();
+            acct = result.getSignInAccount();
             mStatusTextView.setText(acct.getDisplayName());
 
 
@@ -96,10 +100,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d(TAG, "Authorized scope " + iterator.next().toString());
             }
 
-//            updateUI(true);
+            updateUI(acct);
         } else {
             // Signed out, show unauthenticated UI.
-//            updateUI(false);
+            updateUI(acct);
+        }
+    }
+
+    private void updateUI(GoogleSignInAccount account) {
+        if (account != null) {
+            mWebView.setVisibility(View.VISIBLE);
+
         }
     }
 

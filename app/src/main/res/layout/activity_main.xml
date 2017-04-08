@@ -9,11 +9,19 @@
         android:id="@+id/sign_in_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true" />
+        android:layout_centerHorizontal="true" />
 
     <TextView
         android:id="@+id/status_text_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_below="@id/sign_in_button" />
+
+    <WebView
+        android:id="@+id/webview_spotify_login"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/status_text_view"
+        android:visibility="invisible"/>
 
 </RelativeLayout>
