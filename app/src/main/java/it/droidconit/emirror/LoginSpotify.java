@@ -1,25 +1,22 @@
 package it.droidconit.emirror;
 
 
+import android.util.ArrayMap;
+import android.util.Log;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import java.io.IOException;
-
 import it.droidconit.emirror.server_responses.LoginResponse;
-import okhttp3.Call;
-import okhttp3.Callback;
+import it.droidconit.emirror.server_responses.ResponseLogin;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LoginSpotify {
-
+    private String TAG = this.getClass().getSimpleName();
     private LoginResponse loginResponse;
     private SpotifyService spotifyService;
     private WebView mWebView;
@@ -28,29 +25,51 @@ public class LoginSpotify {
     public static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
 
-    private String JSESSIONID;
-    private Callback firstCallback = new Callback() {
-        @Override
-        public void onFailure(Call call, IOException e) {
+    private String jSessionId;
 
-        }
+    private LoginListener mLoginListener;
 
-        @Override
-        public void onResponse(Call call, Response response) throws IOException {
+    public interface LoginListener {
+        void onLoginSucceded(String jsessionid);
 
-        }
-    };
+        void onLoginError();
+    }
 
-
-    public LoginSpotify(WebView webView) {
+    public LoginSpotify(WebView webView, LoginListener loginListener) {
         mClient = new OkHttpClient();
         mRetrofit = new Retrofit.Builder()
                 .baseUrl(SpotifyService.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         spotifyService = mRetrofit.create(SpotifyService.class);
+        mWebView = webView;
+        mLoginListener = loginListener;
+    }
 
 
+    public void performLogin(String authToken) {
+        Log.d(TAG, authToken);
+        Call<ResponseLogin> call = spotifyService.doLogin(new GoogleToken(authToken));
+        call.enqueue(new retrofit2.Callback<ResponseLogin>() {
+            @Override
+            public void onResponse(Call<ResponseLogin> call, retrofit2.Response<ResponseLogin> response) {
+                if (response.body() == null) {
+                    Log.d(TAG, "body null " + call.request().url());
+                    mLoginListener.onLoginError();
+                    return;
+                }
+                jSessionId = response.body().getSessionId();
+                mLoginListener.onLoginSucceded(jSessionId);
+            }
+
+            @Override
+            public void onFailure(Call<ResponseLogin> call, Throwable t) {
+                Log.d(TAG, "Response error");
+            }
+        });
+    }
+
+    public void authSpotify() {
         mWebView.clearCache(true);
         mWebView.setWebViewClient(new WebViewClient() {
 
@@ -62,6 +81,7 @@ public class LoginSpotify {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
 
+                Log.d(TAG, request.getUrl().toString());
                 if (request.getUrl().toString().contains("/connect/facebook;jsessionid")) {
 
                     return true;
@@ -70,23 +90,9 @@ public class LoginSpotify {
                 return super.shouldOverrideUrlLoading(view, request);
             }
         });
-
-//        OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
-//                .followRedirects(false)
-//                .followSslRedirects(false)
-//                .build();
-    }
-
-
-
-    public void performLogin() {
-        RequestBody body = RequestBody.create(JSON, "");
-
-        Request firstRequestSpotify = new Request.Builder()
-                .url("https://api.radiosa.biz:8443/connect/facebook")
-                .addHeader("Authorization", loginResponse.getAccess_token())
-                .post(body)
-                .build();
-        mClient.newCall(firstRequestSpotify).enqueue(firstCallback);
+        ArrayMap<String, String> headers = new ArrayMap<>();
+        headers.put("Cookie", "JSESSIONID=" + jSessionId + ";");
+        Log.d(TAG, "jsessionid = " + jSessionId);
+        mWebView.loadUrl(SpotifyService.BASE_URL + "/login/spotify", headers);
     }
 }
